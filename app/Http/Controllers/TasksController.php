@@ -18,11 +18,17 @@ class TasksController extends Controller
      */
     public function index()
     {
-        $tasks = Task::all();
-        
-        return view('tasks.index',[
-            'tasks' => $tasks
-            ]);
+        $data = [];
+        if (\Auth::check()) {
+            $user = \Auth::user();
+            $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(10);
+
+            $data = [
+                'user' => $user,
+                'tasks' => $tasks,
+            ];
+        }
+        return view('welcome', $data);
     }
 
     /**
@@ -30,6 +36,8 @@ class TasksController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+     
+    /*
     public function create()
     {
         $task = new Task;
@@ -38,6 +46,7 @@ class TasksController extends Controller
            'task' => $task 
         ]);
     }
+    */
 
     /**
      * Store a newly created resource in storage.
@@ -52,10 +61,10 @@ class TasksController extends Controller
             'content' => 'required|max:255'
         ]);
         
-        $task = new Task;
-        $task->status = $request->status;
-        $task->content = $request->content;
-        $task->save();
+        $request->user()->tasks()->create([
+            'status' => $request->status,
+            'content' => $request->content,
+        ]);
         
         return redirect('/');
     }
@@ -66,14 +75,13 @@ class TasksController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+     
+    /*
     public function show($id)
     {
         $task = Task::find($id);
-
-        return view('tasks.show', [
-            'task' => $task
-        ]);
     }
+    */
 
     /**
      * Show the form for editing the specified resource.
@@ -81,6 +89,8 @@ class TasksController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+     
+    /*
     public function edit($id)
     {
         $task = Task::find($id);
@@ -89,6 +99,7 @@ class TasksController extends Controller
             'task' => $task
             ]);
     }
+    */
 
     /**
      * Update the specified resource in storage.
@@ -121,8 +132,11 @@ class TasksController extends Controller
     public function destroy($id)
     {
         $task = Task::find($id);
-        $task->delete();
         
-        return redirect('/');
+        if (\Auth::user()->id === $task->user_id) {
+            $task->delete();
+        }
+        
+        return redirect()->back();
     }
 }
